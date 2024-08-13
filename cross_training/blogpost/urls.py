@@ -4,8 +4,8 @@ from . import views
 
 app_name = "blogpost"
 urlpatterns = [
-	path("", views.index, name = "index"),
-	path("register/", views.register, name = "register"),
-	path("login/", views.login, name = "login"),
-	path("success/", views.success, name = "success"),
+	path("", views.index_view, name = "index"),
+	path("register/", views.register_view, name = "register"),
+	path("login/", views.login_view, name = "login"),
+	path("posts/", views.posts_view, name = "posts"),
 ]
