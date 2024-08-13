@@ -58,4 +58,16 @@ def post_create_view(request):
 		form = CreatePostForm()
 	return render(request, "blogpost/create.html", {"form": form})
 
+def upvote_post(request):
+	post = Post.objects.get(id = request.POST["post_id"])
+	post.votes += 1
+	post.save()
+	return redirect("blogpost:posts")
+
+def downvote_post(request):
+	post = Post.objects.get(id = request.POST["post_id"])
+	post.votes -= 1
+	post.save()
+	return redirect("blogpost:posts")
+
 #django url creation parse template

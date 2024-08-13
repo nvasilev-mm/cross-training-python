@@ -6,7 +6,7 @@
     		<input type="submit" value="Logout">
 		</form>
         </br>
-        <form action="blogpost/create/" method="post">
+        <form action="create/" method="post">
             {% csrf_token %}
             <input type="submit" value="Create Post">
         </form>
@@ -19,6 +19,14 @@
             <p>Hashtags: {{post.hashtags}}</p>
             <p>Created at: {{post.created_at}}</p>
             <p>Author: {{post.author}}</p>
+            <form action="upvote/">
+                {% csrf_token %}
+                <input type="submit" value="+">
+            </form>
+            <form action="downvote/">
+                {% csrf_token %}
+                <input type="submit" value="-">
+            </form>
         {% endfor %}
 	</body>
 </html>
