@@ -3,6 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Post
+from .forms import CreatePostForm
 
 def index_view(request):
 	return render(request, "blogpost/index.html")
@@ -36,12 +37,25 @@ def logout_view(request):
 def posts_view(request):
 	posts = Post.objects.all().order_by("-created_at")
 	if not posts:
-		post_one = Post(title = "First Post", content = "Some Content")
-		post_two = Post(title = "Second Post", content = "Some Other Content")
+		post_one = Post(title = "First Post", content = "Some Content", author=request.user)
+		post_two = Post(title = "Second Post", content = "Some Other Content", author=request.user)
 		post_one.save()
 		post_two.save()
 		posts = Post.objects.all().order_by("-created_at")
+		pass
 	
 	return render(request, "blogpost/posts.html", {"posts" : posts})
+
+def post_create_view(request):
+	if request.method == "POST":
+		form = CreatePostForm(request.POST)
+		if form.is_valid():
+			instance = form.save(commit=False)
+			instance.author = request.user
+			instance.save()
+			return redirect("blogpost:posts")
+	else:
+		form = CreatePostForm()
+	return render(request, "blogpost/create.html", {"form": form})
 
 #django url creation parse template
