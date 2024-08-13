@@ -1,6 +1,10 @@
 <!doctype html>
 <html>	
 	<body>
+        <form action="/blogpost/logout/" method="post">
+    		{% csrf_token %}
+    		<input type="submit" value="Logout">
+		</form>
 		<h2>Posts</h2>
         </br>
         {% for post in posts %}

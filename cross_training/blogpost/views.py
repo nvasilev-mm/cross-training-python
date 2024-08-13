@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Post
 
@@ -23,10 +23,15 @@ def login_view(request):
 		if form.is_valid():
 			user = form.get_user()
 			login(request, user)
-			return render(request, "blogpost/posts.html")
+			return posts_view(request)
 	else:
 		form = AuthenticationForm()
 	return render(request, "blogpost/login.html", {"form": form})
+
+def logout_view(request):
+	if request.method == "POST":
+		logout(request)
+		return redirect("blogpost:index")
 
 def posts_view(request):
 	posts = Post.objects.all().order_by("-created_at")
