@@ -12,3 +12,6 @@ class Post(models.Model):
 
     def hashtags(self):
         return [tag.strip() for tag in self.content.split() if tag.startswith("#")]
+
+    def __str__(self):
+        return self.title
