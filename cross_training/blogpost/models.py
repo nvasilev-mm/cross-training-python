@@ -13,7 +13,7 @@ class Post(models.Model):
 
     def save(self, *args, **kwargs):
         hashtags_list = self.hashtags()
-        htags_list = [None] * len(hashtags_list)
+        htags_list = []
         for tag in hashtags_list:
             if not Htag.objects.filter(name = tag).exists():
                 htags_list[hashtags_list.index(tag)] = tag

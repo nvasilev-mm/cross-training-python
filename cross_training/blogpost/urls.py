@@ -10,6 +10,6 @@ urlpatterns = [
 	path("logout/", views.logout_view, name = "logout"),
 	path("posts/", views.posts_view, name = "posts"),
 	path("posts/create/", views.post_create_view, name = "create"),
-	path("posts/upvote/", views.upvote_post, name = "upvote"),
-	path("posts/downvote/", views.downvote_post, name = "downvote"),
+	path("posts/upvote/<int:id>", views.upvote_post, name = "upvote"),
+	path("posts/downvote/<int:id>", views.downvote_post, name = "downvote"),
 ]

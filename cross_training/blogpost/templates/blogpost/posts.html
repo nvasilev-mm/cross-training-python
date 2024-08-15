@@ -19,11 +19,11 @@
             <p>Hashtags: {{post.hashtags}}</p>
             <p>Created at: {{post.created_at}}</p>
             <p>Author: {{post.author}}</p>
-            <form action="upvote/">
+            <form action="{% url 'blogpost:upvote' id=post.id %}" method = "post">
                 {% csrf_token %}
                 <input type="submit" value="+">
             </form>
-            <form action="downvote/">
+            <form action="{% url 'blogpost:downvote' id=post.id %}" method = "post">
                 {% csrf_token %}
                 <input type="submit" value="-">
             </form>
