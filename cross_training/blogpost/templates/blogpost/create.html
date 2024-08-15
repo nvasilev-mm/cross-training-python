@@ -2,10 +2,10 @@
 <html>	
 	<body>
 		<h2>Create a post</h2>
-        <form action="/blogpost/create/" method="post">
+        <form action="{% url 'blogpost:create' %}" method = "post">
     		{% csrf_token %}
     		{{ form }}
-    		<input type="submit" value="Create Post">
+    		<input type = "submit" value = "Create Post">
 		</form>
 	</body>
 </html>

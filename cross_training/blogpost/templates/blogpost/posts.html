@@ -1,14 +1,14 @@
 <!doctype html>
 <html>	
 	<body>
-        <form action="/blogpost/logout/" method="post">
+        <form action = "/blogpost/logout/" method = "post">
     		{% csrf_token %}
-    		<input type="submit" value="Logout">
+    		<input type = "submit" value = "Logout">
 		</form>
         </br>
-        <form action="create/" method="post">
+        <form action = "{% url 'blogpost:create' %}" method = "post">
             {% csrf_token %}
-            <input type="submit" value="Create Post">
+            <input type = "submit" value = "Create Post">
         </form>
 		<h2>Posts</h2>
         </br>

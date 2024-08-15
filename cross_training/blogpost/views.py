@@ -24,7 +24,7 @@ def login_view(request):
 		if form.is_valid():
 			user = form.get_user()
 			login(request, user)
-			return posts_view(request)
+			return redirect("blogpost:posts")
 	else:
 		form = AuthenticationForm()
 	return render(request, "blogpost/login.html", {"form": form})

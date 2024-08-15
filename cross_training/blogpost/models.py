@@ -16,9 +16,10 @@ class Post(models.Model):
         htags_list = [None] * len(hashtags_list)
         for tag in hashtags_list:
             if not Htag.objects.filter(name = tag).exists():
-                htags_list[hashtags_list.index(tag)] = htag
-        if not htags_list.empty():
-            Htag.objects.bulk_create(htags_list)
+                htags_list[hashtags_list.index(tag)] = tag
+        if htags_list:
+            batch = [Htag(name = new_tag) for new_tag in htags_list]
+            Htag.objects.bulk_create(batch)
         super(Post, self).save(*args, **kwargs)
 
     def hashtags(self):
