@@ -3,7 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import Post, Comment
+from .models import Post, Comment, Vote
 from .forms import CreatePostForm, CreateCommentForm
 
 def index_view(request):
@@ -80,15 +80,23 @@ def post_detail_view(request, id):
 @login_required(login_url = "blogpost:login")
 def upvote_post(request, id):
 	post = Post.objects.get(id = id)
-	post.votes += 1
-	post.save()
+	vote, created = Vote.objects.get_or_create(author = request.user, post = post)
+	if created:
+		vote.is_upvote = True
+		vote.save()
+		post.votes += 1
+		post.save()
 	return redirect("blogpost:posts")
 
 @login_required(login_url = "blogpost:login")
 def downvote_post(request, id):
 	post = Post.objects.get(id = id)
-	post.votes -= 1
-	post.save()
+	vote, created = Vote.objects.get_or_create(author = request.user, post = post)
+	if created:
+		vote.is_upvote = False
+		vote.save()
+		post.votes -= 1
+		post.save()
 	return redirect("blogpost:posts")
 
 #django url creation parse template

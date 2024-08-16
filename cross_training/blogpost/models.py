@@ -39,3 +39,8 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.content
+
+class Vote(models.Model):
+    author = models.ForeignKey(User, on_delete = models.CASCADE, default = None)
+    post = models.ForeignKey(Post, on_delete = models.CASCADE, default = None)
+    is_upvote = models.BooleanField(default = True)
