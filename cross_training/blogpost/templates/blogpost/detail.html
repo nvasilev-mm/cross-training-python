@@ -1,0 +1,28 @@
+<!doctype html>
+<html>	
+	<body>
+		<h2>{{post.title}}</h2>
+        <p>{{post.content}}</p>
+        <p>Votes: {{post.votes}}</p>
+        <p>Hashtags: {{post.hashtags}}</p>
+        <p>Created at: {{post.created_at}}</p>
+        <p>Author: {{post.author}}</p>
+		</br>
+		<h2>Comments</h2>
+		</br>
+		{% for comment in comments %}
+        <p>
+            On {{ comment.created_at.date }} <b>{{ comment.author }}</b> wrote:
+        </p>
+        <p>
+            {{ comment.content | linebreaks }}
+        </p>
+    	{% endfor %}
+		</br>
+        <form action="{% url 'blogpost:detail' id=post.id %}" method = "post">
+    		{% csrf_token %}
+    		{{ form }}
+    		<input type = "submit" value = "Comment">
+		</form>
+	</body>
+</html>

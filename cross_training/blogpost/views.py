@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import Post
-from .forms import CreatePostForm
+from .models import Post, Comment
+from .forms import CreatePostForm, CreateCommentForm
 
 def index_view(request):
 	return render(request, "blogpost/index.html")
@@ -46,6 +47,7 @@ def posts_view(request):
 	
 	return render(request, "blogpost/posts.html", {"posts" : posts})
 
+@login_required(login_url = "blogpost:login")
 def post_create_view(request):
 	if request.method == "POST":
 		form = CreatePostForm(request.POST)
@@ -58,12 +60,31 @@ def post_create_view(request):
 		form = CreatePostForm()
 	return render(request, "blogpost/create.html", {"form": form})
 
+def post_detail_view(request, id):
+	post = Post.objects.get(id = id)
+	if request.method == "POST":
+		form = CreateCommentForm(request.POST)
+		if form.is_valid():
+			comment = Comment(
+				post = post,
+				content = form.cleaned_data["content"],
+				author=request.user
+			)
+			comment.save()
+			return redirect("blogpost:detail", id)
+	else:
+		form = CreateCommentForm()
+		comments = Comment.objects.filter(post = post)
+		return render(request, "blogpost/detail.html", {"post": post, "form": form, "comments": comments})
+
+@login_required(login_url = "blogpost:login")
 def upvote_post(request, id):
 	post = Post.objects.get(id = id)
 	post.votes += 1
 	post.save()
 	return redirect("blogpost:posts")
 
+@login_required(login_url = "blogpost:login")
 def downvote_post(request, id):
 	post = Post.objects.get(id = id)
 	post.votes -= 1
