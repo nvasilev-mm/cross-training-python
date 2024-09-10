@@ -6,7 +6,7 @@ class Post(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add = True)
     votes = models.IntegerField(default = 0)
-    author = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
+    author = models.ForeignKey(User, on_delete = models.CASCADE, default = None)
     
     def __str__(self):
         return self.title
@@ -16,7 +16,7 @@ class Post(models.Model):
         htags_list = []
         for tag in hashtags_list:
             if not Htag.objects.filter(name = tag).exists():
-                htags_list[hashtags_list.index(tag)] = tag
+                htags_list.append(tag)
         if htags_list:
             batch = [Htag(name = new_tag) for new_tag in htags_list]
             Htag.objects.bulk_create(batch)

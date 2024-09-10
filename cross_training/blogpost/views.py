@@ -1,102 +1,200 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseRedirect
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.models import User
+
+from rest_framework import generics
+from rest_framework import permissions
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.views import APIView
+
 from .models import Post, Comment, Vote
 from .forms import CreatePostForm, CreateCommentForm
+from .permissions import IsAuthorOrReadOnly
+from .serializers import PostSerializer, CommentSerializer, VoteSerializer, HtagSerializer, UserSerializer
 
-def index_view(request):
-	return render(request, "blogpost/index.html")
+(["GET"])
+def index_view(request, format = None):
+	return Response({ #app_name is required when reversing urls
+		"posts": reverse("blogpost:posts", request = request, format = format),
+	})
 
-def register_view(request):
-	if request.method == "POST":
-		form = UserCreationForm(request.POST)
-		if form.is_valid():
-			form.save()
-			return login_view(request)
-	else:
-		form = UserCreationForm()
-	return render(request, "blogpost/register.html", {"form": form})
+class Register(APIView):
+	def post(self, request, format = None):
+		serializer = UserSerializer(data = request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status = status.HTTP_201_CREATED)
+		return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-def login_view(request):
-	if request.method == "POST":
-		form = AuthenticationForm(data = request.POST)
-		if form.is_valid():
-			user = form.get_user()
-			login(request, user)
-			return redirect("blogpost:posts")
-	else:
-		form = AuthenticationForm()
-	return render(request, "blogpost/login.html", {"form": form})
+class Login(APIView):
+	def post(self, request, format = None):
+		username = request.data.get("username")
+		password = request.data.get("password")
 
-def logout_view(request):
-	if request.method == "POST":
-		logout(request)
-		return redirect("blogpost:index")
+		user = User.objects.get(username = username)
 
-def posts_view(request):
-	posts = Post.objects.all().order_by("-created_at")
-	if not posts:
-		post_one = Post(title = "First Post", content = "Some Content", author=request.user)
-		post_two = Post(title = "Second Post", content = "Some Other Content", author=request.user)
-		post_one.save()
-		post_two.save()
-		posts = Post.objects.all().order_by("-created_at")
-		pass
+		if not user:
+			user = authenticate(username = username, password = password)
+		
+		if user:
+			token, _ = Token.objects.get_or_create(user = user)
+			return Response({"token": token.key}, status = status.HTTP_200_OK)
+		
+		return Response({"error": "Invalid credentials"}, status = status.HTTP_400_BAD_REQUEST)
+
+class Logout(APIView):
+	def post(self, request, format = None):
+		try:
+			request.user.auth_token.delete()
+			return Response({"success": "Successfully logged out"}, status = status.HTTP_200_OK)
+		except Exception as e:
+			return Response({"error": str(e)}, status = status.HTTP_400_BAD_REQUEST)		
+
+class PostList(APIView):
+	def get(self, request, format = None):
+		posts = Post.objects.all()
+		serializer = PostSerializer(posts, many = True)
+		return Response(serializer.data)
+
+	def post(self, request, format = None):
+		serializer = PostSerializer(data = requsest.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status = status.HTTP_201_CREATED)
+		return Resposne(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+class PostDetails(APIView):
+	permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+	def get_object(self, id):
+		try:
+			post = Post.objects.get(id = id)
+			post.comments = Comment.objects.filter(post = post)
+			return post
+		except Post.DoesNotExist:
+			raise Http404
 	
-	return render(request, "blogpost/posts.html", {"posts" : posts})
+	def get(self, request, id, format = None):
+		post = self.get_object(id)
+		serializer = PostSerializer(post)
+		return Response(serializer.data)
 
-@login_required(login_url = "blogpost:login")
-def post_create_view(request):
-	if request.method == "POST":
-		form = CreatePostForm(request.POST)
-		if form.is_valid():
-			instance = form.save(commit=False)
-			instance.author = request.user
-			instance.save()
-			return redirect("blogpost:posts")
-	else:
-		form = CreatePostForm()
-	return render(request, "blogpost/create.html", {"form": form})
+	def put(self, request, id, format = None):
+		post = self.get_object(id)
+		serializer = PostSerializer(post, data = request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data)
+		return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-def post_detail_view(request, id):
-	post = Post.objects.get(id = id)
-	if request.method == "POST":
-		form = CreateCommentForm(request.POST)
-		if form.is_valid():
-			comment = Comment(
-				post = post,
-				content = form.cleaned_data["content"],
-				author=request.user
-			)
-			comment.save()
-			return redirect("blogpost:detail", id)
-	else:
-		form = CreateCommentForm()
-		comments = Comment.objects.filter(post = post)
-		return render(request, "blogpost/detail.html", {"post": post, "form": form, "comments": comments})
+	def delete(self, request, id, format = None):
+		post = self.get_object(id)
+		post.delete()
+		return Response(status = status.HTTP_204_NO_CONTENT)
 
-@login_required(login_url = "blogpost:login")
-def upvote_post(request, id):
-	post = Post.objects.get(id = id)
-	vote, created = Vote.objects.get_or_create(author = request.user, post = post)
-	if created:
-		vote.is_upvote = True
-		vote.save()
-		post.votes += 1
-		post.save()
-	return redirect("blogpost:posts")
+class CommentList(APIView):
+	def get(self, request, format = None):
+		comments = Comment.objects.all()
+		serializer = CommentSerializer(comments, many = True)
+		return Response(serializer.data)
 
-@login_required(login_url = "blogpost:login")
-def downvote_post(request, id):
-	post = Post.objects.get(id = id)
-	vote, created = Vote.objects.get_or_create(author = request.user, post = post)
-	if created:
-		vote.is_upvote = False
-		vote.save()
-		post.votes -= 1
-		post.save()
-	return redirect("blogpost:posts")
+	def post(self, request, format = None):
+		serializer = CommentSerializer(data = request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status = status.HTTP_201_CREATED)
+		return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
 
-#django url creation parse template
+class CommentDetails(APIView):
+	queryset = Comment.objects.all()
+	serializer_class = CommentSerializer
+	permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+	def get_object(self, id):
+		try:
+			comment = Comment.objects.get(id = id)
+			return comment
+		except Comment.DoesNotExist:
+			raise Http404
+
+	def get(self, request, id, format = None):
+		comment = self.get_object(id)
+		serializer = CommentSerializer(comment)
+		return Response(serializer.data)
+
+	def put(self, request, id, format = None):
+		comment = self.get_object(id)
+		serializer = CommentSerializer(comment, data = request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data)
+		return Response(serializer.error_messages, status = status.HTTP_400_BAD_REQUEST)
+
+	def delete(self, request, id, format = None):
+		comment = self.get_object(id)
+		comment.delete()
+		return Response(status = status.HTTP_204_NO_CONTENT)
+
+class CastUpvote(APIView):
+	permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+	def post(self, request, id, format = None):
+		post = Post.objects.get(id = id)
+		vote, created = Vote.objects.get_or_create(author = request.user, post = post)
+		if created:
+			vote.is_upvote = True
+			vote.save()
+			post.votes += 1
+			post.save()
+			return Response(status = status.HTTP_204_NO_CONTENT)
+		# is this even necessary?
+		#return Response(status = status.HTTP_200_OK)
+
+class CastDownvote(APIView):
+	permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
+
+	def post(self, request, id, format = None):
+		post = Post.objects.get(id = id)
+		vote, created = Vote.objects.get_or_create(author = request.user, post = post)
+		if created:
+			vote.is_upvote = True
+			vote.save()
+			post.votes -= 1
+			post.save()
+			return Response(status = status.HTTP_204_NO_CONTENT)
+
+class Search(APIView):
+
+	def get_queryset(self):
+		title_param = self.request.query_params.get("title")
+		htag_param = self.request.query_params.get("htag")
+
+		#this doesn't feel like the most elegant way to validate the data
+		if title_param is None and htag_param is None:
+			posts = Post.objects.all().order_by("-created_at")
+			serializer = PostSerializer(posts, many = True)
+			return Response(serializer.data)
+		elif title_param is not None and htag_param is None:
+			posts = Post.objects.filter(title = title_param).order_by("-created_at")
+			serializer = PostSerializer(posts, many = True)
+			return Response(serializer.data)
+		elif title_param is None and htag_param is not None:
+			posts = Post.objects.filter(hashtags__name = htag_param).order_by("-created_at")
+			serializer = PostSerializer(posts, many = True)
+			return Response(serializer.data)
+		else:
+			posts = Post.objects.filter(title = title_param).filter(hashtags__name = htag_param).order_by("-created_at")
+			serializer = PostSerializer(posts, many = True)
+			return Response(serializer.data)
+
+class SearchHot(APIView):
+
+	def get_queryset(self):
+		posts = Post.objects.all().filter(votes__gte = 5) #not sure how to get the comments since they're not a property of the Post model
+		serializer = PostSerializer(posts, many = True)
+		return Response(serializer.data)
