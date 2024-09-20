@@ -32,10 +32,10 @@ class Htag(models.Model):
         return self.name
 
 class Comment(models.Model):
-    post = models.ForeignKey(Post, on_delete = models.CASCADE, related_name = "post")
+    post = models.ForeignKey(Post, on_delete = models.CASCADE, related_name = "comments")
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add = True)
-    author = models.ForeignKey(User, on_delete = models.CASCADE, default = None, related_name = "author") 
+    author = models.ForeignKey(User, on_delete = models.CASCADE, default = None, related_name = "comments") 
 
     def __str__(self):
         return self.content

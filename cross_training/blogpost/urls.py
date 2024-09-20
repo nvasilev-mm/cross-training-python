@@ -20,4 +20,5 @@ urlpatterns = [
 	path("comments/", views.CommentList.as_view(), name = "comments"),
 	path("comments/<int:id>", views.CommentDetails.as_view(), name = "comment_details"),
 	path("search/", views.Search.as_view(), name = "search"),
+	path("searchhot/", views.SearchHot.as_view(), name = "searchhot"),
 ]

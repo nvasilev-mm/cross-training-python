@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
+from django.db.models import Count
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+from django.shortcuts import render, redirect
 
 from rest_framework import generics
 from rest_framework import permissions
@@ -192,9 +193,8 @@ class Search(APIView):
 			serializer = PostSerializer(posts, many = True)
 			return Response(serializer.data)
 
-class SearchHot(APIView):
+class SearchHot(generics.ListAPIView):
+	serializer_class = PostSerializer
 
 	def get_queryset(self):
-		posts = Post.objects.all().filter(votes__gte = 5) #not sure how to get the comments since they're not a property of the Post model
-		serializer = PostSerializer(posts, many = True)
-		return Response(serializer.data)
+		return Post.objects.annotate(comments_count = Count("comments")).filter(votes__gte = 1, comments_count__gte = 2)
